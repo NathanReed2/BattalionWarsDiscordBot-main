@@ -1,0 +1,17 @@
+{
+  "name": "battalion-wars-discord-bot",
+  "version": "1.2.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.20.0",
+    "dotenv": "^16.5.0",
+    "fs": "^0.0.1-security",
+    "node-cron": "^3.0.2"
+  }
+}
