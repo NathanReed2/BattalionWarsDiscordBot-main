@@ -34,12 +34,12 @@ const data = {
 let lastSelectedMissions = { assault: null, skirmish: null, coop: null, anymission: null };
 
 // --- Buffers for new commands ---
-const PICK_BUFFER_SIZE = { assault2: 30, skirmish2: 30, coop2: 20, anymission2: 80 };
+const PICK_BUFFER_SIZE = { assault: 30, skirmish: 30, coop: 20, anymission: 80 };
 const pickBuffers = {
-    assault2: [],
-    skirmish2: [],
-    coop2: [],
-    anymission2: []
+    assault: [],
+    skirmish: [],
+    coop: [],
+    anymission: []
 };
 
 // Helper to fill buffer evenly with all missions, but randomly shuffled
@@ -64,10 +64,10 @@ function fillBufferEvenly(bufferName, missions) {
 }
 
 // Fill buffers on startup
-fillBufferEvenly('assault2', data.assault);
-fillBufferEvenly('skirmish2', data.skirmish);
-fillBufferEvenly('coop2', data.coop);
-fillBufferEvenly('anymission2', ['assault', 'skirmish', 'coop'].flatMap(cat => data[cat].map(m => `${cat}|${m}`)));
+fillBufferEvenly('assault', data.assault);
+fillBufferEvenly('skirmish', data.skirmish);
+fillBufferEvenly('coop', data.coop);
+fillBufferEvenly('anymission', ['assault', 'skirmish', 'coop'].flatMap(cat => data[cat].map(m => `${cat}|${m}`)));
 
 // Weighted random selection based on inverse pickrate
 function weightedPick(missions, buffer, isAnyMission = false) {
@@ -158,6 +158,7 @@ function setupInteractionCreate(client) {
                 await interaction.reply({ embeds: [embed] });
                 return;
             }
+            /* 
             if (['assault', 'skirmish', 'coop'].includes(commandName)) {
                 // Pick a random mission (allow repeats)
                 const randomMission = data[commandName][Math.floor(Math.random() * data[commandName].length)];
@@ -170,14 +171,15 @@ function setupInteractionCreate(client) {
                     await interaction.reply(randomMission);
                 }
             }
-            if (['assault2', 'skirmish2', 'coop2'].includes(commandName)) {
-                const baseCommand = commandName.replace('2', '');
+            */
+            if (['assault', 'skirmish', 'coop'].includes(commandName)) {
+                const baseCommand = commandName;
                 const missions = data[baseCommand];
                 // Weighted pick
-                const pick = weightedPick(missions, pickBuffers[commandName]);
+                const pick = weightedPick(missions, pickBuffers[baseCommand]);
                 // Update buffer
-                pickBuffers[commandName].push(pick);
-                if (pickBuffers[commandName].length > PICK_BUFFER_SIZE[commandName]) pickBuffers[commandName].shift();
+                pickBuffers[baseCommand].push(pick);
+                if (pickBuffers[baseCommand].length > PICK_BUFFER_SIZE[baseCommand]) pickBuffers[baseCommand].shift();
                 const imageFilename = pick.replace(/\s+/g, '_') + '.png';
                 const fullImagePath = path.join(imagePath, baseCommand, imageFilename);
                 if (fs.existsSync(fullImagePath)) {
@@ -187,6 +189,7 @@ function setupInteractionCreate(client) {
                     await interaction.reply(pick);
                 }
             }
+            /* 
             if (commandName === 'anymission') {
                 const missionCategories = ['assault', 'skirmish', 'coop'];
                 const allMissions = missionCategories.flatMap(category =>
@@ -204,16 +207,17 @@ function setupInteractionCreate(client) {
                     await interaction.reply(randomSelection.mission);
                 }
             }
-            if (commandName === 'anymission2') {
+            */
+            if (commandName === 'anymission') {
                 const missionCategories = ['assault', 'skirmish', 'coop'];
                 const allMissions = missionCategories.flatMap(category =>
                     data[category].map(mission => ({ mission, category }))
                 );
                 const missionKeys = allMissions.map(obj => `${obj.category}|${obj.mission}`);
                 // Weighted pick
-                const pickKey = weightedPick(missionKeys, pickBuffers.anymission2, true);
-                pickBuffers.anymission2.push(pickKey);
-                if (pickBuffers.anymission2.length > PICK_BUFFER_SIZE.anymission2) pickBuffers.anymission2.shift();
+                const pickKey = weightedPick(missionKeys, pickBuffers.anymission, true);
+                pickBuffers.anymission.push(pickKey);
+                if (pickBuffers.anymission.length > PICK_BUFFER_SIZE.anymission) pickBuffers.anymission.shift();
                 const [category, mission] = pickKey.split('|');
                 const imageFilename = mission.replace(/\s+/g, '_') + '.png';
                 const fullImagePath = path.join(imagePath, category, imageFilename);
@@ -226,30 +230,30 @@ function setupInteractionCreate(client) {
             }
             if (commandName === 'missionchances') {
                 let reply = '';
-                // Assault2
-                reply += '**Assault2 Chances:**\n';
-                getMissionChances(data.assault, pickBuffers.assault2).forEach(obj => {
+                // assault
+                reply += '**assault Chances:**\n';
+                getMissionChances(data.assault, pickBuffers.assault).forEach(obj => {
                     reply += `- ${obj.mission}: ${obj.percent.toFixed(2)}%\n`;
                 });
-                // Skirmish2
-                reply += '\n**Skirmish2 Chances:**\n';
-                getMissionChances(data.skirmish, pickBuffers.skirmish2).forEach(obj => {
+                // skirmish
+                reply += '\n**skirmish Chances:**\n';
+                getMissionChances(data.skirmish, pickBuffers.skirmish).forEach(obj => {
                     reply += `- ${obj.mission}: ${obj.percent.toFixed(2)}%\n`;
                 });
-                // Coop2
-                reply += '\n**Coop2 Chances:**\n';
-                getMissionChances(data.coop, pickBuffers.coop2).forEach(obj => {
+                // coop
+                reply += '\n**coop Chances:**\n';
+                getMissionChances(data.coop, pickBuffers.coop).forEach(obj => {
                     reply += `- ${obj.mission}: ${obj.percent.toFixed(2)}%\n`;
                 });
-                // Anymission2
+                // anymission
                 const missionCategories = ['assault', 'skirmish', 'coop'];
                 const allMissions = missionCategories.flatMap(category =>
                     data[category].map(mission => ({ mission, category }))
                 );
                 const missionKeys = allMissions.map(obj => `${obj.category}|${obj.mission}`);
                 // Group by category for display
-                const chances = getMissionChances(missionKeys, pickBuffers.anymission2, true);
-                reply += '\n**Anymission2 Chances:**\n';
+                const chances = getMissionChances(missionKeys, pickBuffers.anymission, true);
+                reply += '\n**anymission Chances:**\n';
                 for (const cat of missionCategories) {
                     reply += `*${cat.charAt(0).toUpperCase() + cat.slice(1)}*\n`;
                     chances.filter(obj => obj.mission.startsWith(cat + '|')).forEach(obj => {
