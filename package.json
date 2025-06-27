@@ -2,6 +2,8 @@
   "name": "battalion-wars-discord-bot",
   "version": "1.2.0",
   "description": "",
+  "main": "index.js",
+  "bin": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,5 +15,10 @@
     "dotenv": "^16.5.0",
     "fs": "^0.0.1-security",
     "node-cron": "^3.0.2"
+  },
+  "pkg": {
+    "assets": [
+      "images/**/*"
+    ]
   }
 }

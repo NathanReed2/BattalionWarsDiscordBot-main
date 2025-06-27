@@ -1,11 +1,11 @@
+const path = require('path');
+const fs = require('fs');
 const { PermissionsBitField, EmbedBuilder } = require('discord.js');
 const { setAutoVerify } = require('./guildMemberAdd');
 const LOG_CHANNEL_ID = '1242967139472773271';
 const UNVERIFIED_ROLE_ID = '830119466967760957';
 const VERIFIED_ROLE_ID = '1254576308843970593';
-const imagePath = 'images/';
-const fs = require('fs');
-const path = require('path');
+const imagePath = path.join(process.cwd(), 'images');
 
 const data = {
     assault: [
