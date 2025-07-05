@@ -34,7 +34,7 @@ const data = {
 let lastSelectedMissions = { assault: null, skirmish: null, coop: null, anymission: null };
 
 // --- Buffers for new commands ---
-const PICK_BUFFER_SIZE = { assault: 30, skirmish: 30, coop: 20, anymission: 80 };
+const PICK_BUFFER_SIZE = { assault: 18, skirmish: 18, coop: 12, anymission: 36 };
 const pickBuffers = {
     assault: [],
     skirmish: [],
