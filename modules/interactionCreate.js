@@ -34,7 +34,7 @@ const data = {
 let lastSelectedMissions = { assault: null, skirmish: null, coop: null, anymission: null };
 
 // --- Buffers for new commands ---
-const PICK_BUFFER_SIZE = { assault: 18, skirmish: 18, coop: 12, anymission: 36 };
+const PICK_BUFFER_SIZE = { assault: 12, skirmish: 12, coop: 8, anymission: 18 };
 const pickBuffers = {
     assault: [],
     skirmish: [],
@@ -315,6 +315,45 @@ function setupInteractionCreate(client) {
                         files: fileBatch
                     });
                 }
+                return;
+            }
+            if (commandName === 'debugbuffer') {
+                // Use getString for the option, which will be restricted to the choices set in ready.js
+                const category = interaction.options.getString('category');
+                const buffer = pickBuffers[category];
+                if (!buffer || buffer.length === 0) {
+                    return interaction.reply({ content: `Buffer for ${category} is empty.`, ephemeral: true });
+                }
+                let reply = `**Buffer for \`${category}\` (${buffer.length} slots):**\n`;
+                // Count how many times each mission appears in the buffer
+                const counts = {};
+                buffer.forEach(item => {
+                    let key = item;
+                    if (category === 'anymission') {
+                        const [, mission] = item.split('|');
+                        key = mission;
+                    }
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+                // For each slot, show the mission and the negative percent chance it contributes
+                buffer.forEach((item, idx) => {
+                    let label = item;
+                    let key = item;
+                    if (category === 'anymission') {
+                        const [cat, mission] = item.split('|');
+                        label = `[${cat}] ${mission}`;
+                        key = mission;
+                    }
+                    // Each slot for a mission reduces its chance by (1/buffer.length) * 100%
+                    const slotPercent = (100 / buffer.length);
+                    reply += `Slot ${idx + 1}: ${label} (−${slotPercent.toFixed(2)}% for this mission)\n`;
+                });
+                // Optionally, show total negative percent for each mission
+                reply += `\nTotal negative % per mission in buffer:\n`;
+                Object.entries(counts).forEach(([mission, count]) => {
+                    reply += `- ${mission}: −${(count * 100 / buffer.length).toFixed(2)}%\n`;
+                });
+                await interaction.reply({ content: reply, ephemeral: true });
                 return;
             }
         } else if (interaction.isButton() && interaction.customId.startsWith('verify-')) {

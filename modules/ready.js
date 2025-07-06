@@ -22,7 +22,8 @@ async function setupCommands(client, guild) {
         new SlashCommandBuilder().setName('anymission').setDescription('Get a weighted random mission name from all categories.'),
         new SlashCommandBuilder().setName('membercount').setDescription('Get the current member count of the server.'),
         new SlashCommandBuilder().setName('missionchances').setDescription('Show the current % chance for all maps in the 2 commands.'),
-//        new SlashCommandBuilder().setName('testmissions').setDescription('Show all missions for testing purposes.')
+        new SlashCommandBuilder().setName('debugbuffer').setDescription('shows the current buffer for a catagory and the % chance each slot gives.'),      
+// new SlashCommandBuilder().setName('testmissions').setDescription('Show all missions for testing purposes.')
     ].map(cmd => cmd.toJSON());
 
     await guild.commands.set(commands);
