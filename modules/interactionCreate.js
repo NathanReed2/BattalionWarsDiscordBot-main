@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { PermissionsBitField, EmbedBuilder } = require('discord.js');
 const { setAutoVerify } = require('./guildMemberAdd');
+const { swapLangToVRoles } = require('./langRoles');
 const LOG_CHANNEL_ID = '1242967139472773271';
 const UNVERIFIED_ROLE_ID = '830119466967760957';
 const VERIFIED_ROLE_ID = '1254576308843970593';
@@ -354,6 +355,57 @@ function setupInteractionCreate(client) {
                     reply += `- ${mission}: −${(count * 100 / buffer.length).toFixed(2)}%\n`;
                 });
                 await interaction.reply({ content: reply, ephemeral: true });
+                return;
+            }
+            if (commandName === 'forceunverify') {
+                // Permission check: Administrator only
+                if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+                }
+
+                // Defer the reply immediately to avoid "Unknown interaction" if operations take time
+                await interaction.deferReply({ ephemeral: true }).catch(() => { /* ignore */ });
+
+                const user = interaction.options.getUser('member');
+                const reason = interaction.options.getString('reason') || 'No reason provided';
+                if (!user) {
+                    // If we deferred, use editReply; otherwise reply
+                    try { return await interaction.editReply({ content: 'No member specified.' }); } catch (e) { return interaction.reply({ content: 'No member specified.', ephemeral: true }); }
+                }
+                const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+                if (!member) {
+                    try { return await interaction.editReply({ content: 'Member not found in this guild.' }); } catch (e) { return interaction.reply({ content: 'Member not found in this guild.', ephemeral: true }); }
+                }
+
+                try {
+                    // Remove verified role and add unverified role
+                    await member.roles.remove(VERIFIED_ROLE_ID).catch(() => {});
+                    await member.roles.add(UNVERIFIED_ROLE_ID).catch(() => {});
+
+                    // swap language roles to -v versions (if any)
+                    await swapLangToVRoles(member).catch(() => {});
+
+                    // Log to channel if available
+                    const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+                    if (logChannel) {
+                        logChannel.send(`${interaction.user.tag} forced unverified: ${member.user.tag}. Reason: ${reason}`).catch(() => {});
+                    }
+
+                    // Reply (edit the deferred reply)
+                    try {
+                        await interaction.editReply({ content: `${member.user.tag} has been marked unverified.` });
+                    } catch (err) {
+                        // If interaction is unknown/expired, attempt a followUp, otherwise swallow
+                        try { await interaction.followUp({ content: `${member.user.tag} has been marked unverified.`, ephemeral: true }); } catch (e) { /* ignore */ }
+                    }
+                } catch (e) {
+                    console.error('Error in forceunverify:', e);
+                    try {
+                        await interaction.editReply({ content: 'An error occurred while trying to mark the member unverified.' });
+                    } catch (err) {
+                        try { await interaction.followUp({ content: 'An error occurred while trying to mark the member unverified.', ephemeral: true }); } catch (e2) { /* ignore */ }
+                    }
+                }
                 return;
             }
         } else if (interaction.isButton() && interaction.customId.startsWith('verify-')) {

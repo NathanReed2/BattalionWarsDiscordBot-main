@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // --- Logging patch: log to both console and log.txt ---
-const logFile = path.join(process.cwd(), 'log.txt');
+/* const logFile = path.join(process.cwd(), 'log.txt');
 function logToFile(type, args) {
     const msg = `[${new Date().toISOString()}] [${type.toUpperCase()}] ${args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}\n`;
     fs.appendFileSync(logFile, msg);
@@ -13,7 +13,7 @@ function logToFile(type, args) {
         logToFile(method, args);
         orig.apply(console, args);
     };
-});
+}); */
 // --- End logging patch ---
 
 // Force dotenv to load .env from the current working directory (where the exe is run)

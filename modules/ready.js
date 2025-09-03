@@ -16,14 +16,28 @@ async function setupCommands(client, guild) {
             .addBooleanOption(option =>
                 option.setName('enabled').setDescription('Enable or disable automatic verification').setRequired(true)
             ),
-        new SlashCommandBuilder().setName('assault').setDescription('Get a weighted random assault mission name.'),
-        new SlashCommandBuilder().setName('skirmish').setDescription('Get a weighted random skirmish mission name.'),
-        new SlashCommandBuilder().setName('coop').setDescription('Get a weighted random coop mission name.'),
-        new SlashCommandBuilder().setName('anymission').setDescription('Get a weighted random mission name from all categories.'),
+        new SlashCommandBuilder().setName('assault').setDescription('Get a random assault mission name.'),
+        new SlashCommandBuilder().setName('skirmish').setDescription('Get a random skirmish mission name.'),
+        new SlashCommandBuilder().setName('coop').setDescription('Get a random coop mission name.'),
+        new SlashCommandBuilder().setName('anymission').setDescription('Get a random mission name from all categories.'),
+        new SlashCommandBuilder().setName('assault2').setDescription('Get a weighted random assault mission name.'),
+        new SlashCommandBuilder().setName('skirmish2').setDescription('Get a weighted random skirmish mission name.'),
+        new SlashCommandBuilder().setName('coop2').setDescription('Get a weighted random coop mission name.'),
+        new SlashCommandBuilder().setName('anymission2').setDescription('Get a weighted random mission name from all categories.'),
         new SlashCommandBuilder().setName('membercount').setDescription('Get the current member count of the server.'),
         new SlashCommandBuilder().setName('missionchances').setDescription('Show the current % chance for all maps in the 2 commands.'),
-        new SlashCommandBuilder().setName('debugbuffer').setDescription('shows the current buffer for a catagory and the % chance each slot gives.'),      
-// new SlashCommandBuilder().setName('testmissions').setDescription('Show all missions for testing purposes.')
+//        new SlashCommandBuilder().setName('testmissions').setDescription('Show all missions for testing purposes.')
+        new SlashCommandBuilder()
+            .setName('forceunverify')
+            .setDescription('Force a member to be marked unverified')
+            .setDefaultMemberPermissions(8) // Administrator only
+            .addUserOption(option =>
+                option.setName('member').setDescription('Member to mark unverified').setRequired(true)
+            )
+            .addStringOption(option =>
+                option.setName('reason').setDescription('Reason for forcing unverified').setRequired(false)
+            ),
+        // new SlashCommandBuilder().setName('testmissions').setDescription('Show all missions for testing purposes.')
     ].map(cmd => cmd.toJSON());
 
     await guild.commands.set(commands);
