@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Battalion Wars Discord Bot - Structured Data Representation -->
+<!-- Research Project: Object and Attribute Analysis -->
+
+<BattalionWarsDiscordBot>
+  <SystemMetadata>
+    <ProjectName>Battalion Wars Discord Bot</ProjectName>
+    <Version>1.2.0</Version>
+    <Architecture>Event-Driven Modular System</Architecture>
+    <Platform>Node.js + Discord.js</Platform>
+    <AnalysisDate>2024</AnalysisDate>
+  </SystemMetadata>
+
+  <ApplicationStructure>
+    <EntryPoint>
+      <File>index.js</File>
+      <Purpose>Bootstrap and Configuration</Purpose>
+      <Dependencies>
+        <Dependency module="dotenv" version="16.5.0" purpose="Environment Configuration"/>
+        <Dependency module="discord.js" version="14.20.0" purpose="Discord API Integration"/>
+        <Dependency module="fs" version="native" purpose="File System Operations"/>
+        <Dependency module="path" version="native" purpose="Path Resolution"/>
+      </Dependencies>
+      <ClientConfiguration>
+        <Intents>
+          <Intent>Guilds</Intent>
+          <Intent>GuildMessages</Intent>
+          <Intent>GuildMembers</Intent>
+          <Intent>DirectMessages</Intent>
+        </Intents>
+        <Partials>
+          <Partial>Channel</Partial>
+        </Partials>
+      </ClientConfiguration>
+    </EntryPoint>
+
+    <ModuleArchitecture>
+      <EventHandlers>
+        <Handler name="ready" file="ready.js">
+          <Purpose>Bot initialization and command registration</Purpose>
+          <Responsibilities>
+            <Responsibility>Slash command setup</Responsibility>
+            <Responsibility>Guild validation</Responsibility>
+            <Responsibility>Command clearing and registration</Responsibility>
+          </Responsibilities>
+          <Commands>
+            <Command name="ping" description="Checks the ping time of the bot"/>
+            <Command name="toggleverification" description="Toggle between automatic and manual verification">
+              <Parameters>
+                <Parameter name="enabled" type="boolean" required="true"/>
+              </Parameters>
+            </Command>
+            <Command name="assault" description="Get a random assault mission name"/>
+            <Command name="skirmish" description="Get a random skirmish mission name"/>
+            <Command name="coop" description="Get a random coop mission name"/>
+            <Command name="anymission" description="Get a random mission name from all categories"/>
+            <Command name="assault2" description="Get a weighted random assault mission name"/>
+            <Command name="skirmish2" description="Get a weighted random skirmish mission name"/>
+            <Command name="coop2" description="Get a weighted random coop mission name"/>
+            <Command name="anymission2" description="Get a weighted random mission name from all categories"/>
+            <Command name="membercount" description="Get the current member count of the server"/>
+            <Command name="missionchances" description="Show the current % chance for all maps in the 2 commands"/>
+            <Command name="forceunverify" description="Force a member to be marked unverified">
+              <Permissions level="Administrator"/>
+              <Parameters>
+                <Parameter name="member" type="user" required="true"/>
+                <Parameter name="reason" type="string" required="false"/>
+              </Parameters>
+            </Command>
+          </Commands>
+        </Handler>
+
+        <Handler name="messageCreate" file="messageCreate.js">
+          <Purpose>Message processing and modmail system</Purpose>
+          <Responsibilities>
+            <Responsibility>Direct message handling</Responsibility>
+            <Responsibility>Modmail channel creation</Responsibility>
+            <Responsibility>Verification request processing</Responsibility>
+            <Responsibility>Message relay system</Responsibility>
+          </Responsibilities>
+          <ChannelTypes>
+            <ChannelType name="DirectMessage">
+              <Logic>
+                <Step>Check if author has unverified role</Step>
+                <Step>Create or find modmail channel</Step>
+                <Step>Send verification embed with button</Step>
+                <Step>Relay message to moderators</Step>
+              </Logic>
+            </ChannelType>
+            <ChannelType name="ModmailChannel">
+              <Logic>
+                <Step>Extract user ID from channel topic</Step>
+                <Step>Relay moderator message to user</Step>
+              </Logic>
+            </ChannelType>
+          </ChannelTypes>
+        </Handler>
+
+        <Handler name="messageUpdate" file="messageUpdate.js">
+          <Purpose>Message modification handling</Purpose>
+          <Responsibilities>
+            <Responsibility>Proxy to messageCreate handler</Responsibility>
+          </Responsibilities>
+        </Handler>
+
+        <Handler name="interactionCreate" file="interactionCreate.js">
+          <Purpose>Slash command and button interaction processing</Purpose>
+          <Responsibilities>
+            <Responsibility>Command execution</Responsibility>
+            <Responsibility>Permission validation</Responsibility>
+            <Responsibility>Mission selection algorithms</Responsibility>
+            <Responsibility>Verification button handling</Responsibility>
+          </Responsibilities>
+          <InteractionTypes>
+            <InteractionType name="SlashCommand">
+              <Categories>
+                <Category name="Administrative">
+                  <Commands>
+                    <Command>toggleverification</Command>
+                    <Command>forceunverify</Command>
+                  </Commands>
+                </Category>
+                <Category name="Mission">
+                  <Commands>
+                    <Command>assault</Command>
+                    <Command>skirmish</Command>
+                    <Command>coop</Command>
+                    <Command>anymission</Command>
+                    <Command>missionchances</Command>
+                  </Commands>
+                </Category>
+                <Category name="Utility">
+                  <Commands>
+                    <Command>ping</Command>
+                    <Command>membercount</Command>
+                  </Commands>
+                </Category>
+              </Categories>
+            </InteractionType>
+            <InteractionType name="ButtonInteraction">
+              <ButtonTypes>
+                <ButtonType id="verify-{memberId}" purpose="User verification">
+                  <Actions>
+                    <Action>Remove language -v roles</Action>
+                    <Action>Remove unverified role</Action>
+                    <Action>Add verified role</Action>
+                    <Action>Log verification action</Action>
+                    <Action>Delete modmail channel</Action>
+                  </Actions>
+                </ButtonType>
+              </ButtonTypes>
+            </InteractionType>
+          </InteractionTypes>
+        </Handler>
+
+        <Handler name="guildMemberAdd" file="guildMemberAdd.js">
+          <Purpose>New member processing and auto-verification</Purpose>
+          <Responsibilities>
+            <Responsibility>Account age verification</Responsibility>
+            <Responsibility>Invite tracking analysis</Responsibility>
+            <Responsibility>Automatic role assignment</Responsibility>
+            <Responsibility>Language role conversion</Responsibility>
+          </Responsibilities>
+          <VerificationLogic>
+            <AccountAgeCheck threshold="90" unit="days">
+              <BelowThreshold>
+                <InviteCheck>
+                  <ViaInvite action="allow_normal_flow"/>
+                  <NoInvite action="force_unverified"/>
+                  <Unknown action="force_unverified"/>
+                </InviteCheck>
+              </BelowThreshold>
+              <AboveThreshold action="normal_flow"/>
+            </AccountAgeCheck>
+            <AutoVerificationSetting>
+              <Enabled action="assign_verified_role"/>
+              <Disabled action="assign_unverified_role"/>
+            </AutoVerificationSetting>
+          </VerificationLogic>
+        </Handler>
+
+        <Handler name="guildMemberUpdate" file="guildMemberUpdate.js">
+          <Purpose>Member role change synchronization</Purpose>
+          <Responsibilities>
+            <Responsibility>Language role synchronization</Responsibility>
+            <Responsibility>Automatic -v role management</Responsibility>
+          </Responsibilities>
+        </Handler>
+
+        <Handler name="errorHandlers" file="errorHandlers.js">
+          <Purpose>Global error management</Purpose>
+          <ErrorTypes>
+            <ErrorType name="uncaughtException"/>
+            <ErrorType name="unhandledRejection"/>
+          </ErrorTypes>
+        </Handler>
+      </EventHandlers>
+
+      <SupportModules>
+        <Module name="langRoles" file="langRoles.js">
+          <Purpose>Language role mapping and conversion</Purpose>
+          <RoleMappings>
+            <RoleMapping language="Spanish" 
+                        standard="1242912525243387965" 
+                        verified="1242967391177015428"/>
+            <RoleMapping language="Italian" 
+                        standard="1242912483501670400" 
+                        verified="1242967518562488392"/>
+            <RoleMapping language="English" 
+                        standard="1242912446738464778" 
+                        verified="1242967468335435777"/>
+            <RoleMapping language="Japanese" 
+                        standard="1242912415570595891" 
+                        verified="1242967312349266021"/>
+            <RoleMapping language="French" 
+                        standard="1242912381441675294" 
+                        verified="1242967590385614890"/>
+            <RoleMapping language="German" 
+                        standard="1242912264244428800" 
+                        verified="1242967426006646856"/>
+          </RoleMappings>
+          <Functions>
+            <Function name="swapLangToVRoles" purpose="Convert standard to verified language roles"/>
+          </Functions>
+        </Module>
+      </SupportModules>
+    </ModuleArchitecture>
+  </ApplicationStructure>
+
+  <ConfigurationLayer>
+    <StaticConfiguration>
+      <GuildSettings>
+        <Guild id="188322587116306433" type="PRIMARY_GUILD"/>
+      </GuildSettings>
+      
+      <ChannelConfiguration>
+        <Channel id="1280160927928553534" type="MODMAIL_CATEGORY" purpose="Verification channels container"/>
+        <Channel id="1242967139472773271" type="LOG_CHANNEL" purpose="Administrative action logging"/>
+        <Channel id="836618101666611211" type="IMAGE_CHANNEL" purpose="Primary image sharing"/>
+        <Channel id="946218801828102184" type="VIDEO_CHANNEL" purpose="Video content sharing"/>
+        <Channel id="285274392059969546" type="SECONDARY_IMAGE_CHANNEL" purpose="Additional image sharing"/>
+      </ChannelConfiguration>
+
+      <RoleConfiguration>
+        <Role id="207234190805041152" type="MODERATOR" permissions="VIEW_MODMAIL,VERIFY_USERS"/>
+        <Role id="1254576308843970593" type="VERIFIED" description="Verified member status"/>
+        <Role id="830119466967760957" type="UNVERIFIED" description="Pending verification status"/>
+        <RoleCleanupList>
+          <Role id="1242967391177015428" type="SPANISH_V"/>
+          <Role id="1242967518562488392" type="ITALIAN_V"/>
+          <Role id="1242967468335435777" type="ENGLISH_V"/>
+          <Role id="1242967312349266021" type="JAPANESE_V"/>
+          <Role id="1242967590385614890" type="FRENCH_V"/>
+          <Role id="1242967426006646856" type="GERMAN_V"/>
+          <Role id="830119466967760957" type="UNVERIFIED"/>
+        </RoleCleanupList>
+      </RoleConfiguration>
+    </StaticConfiguration>
+
+    <EnvironmentConfiguration>
+      <Variable name="BOT_TOKEN" required="true" purpose="Discord bot authentication"/>
+      <ConfigurationFile path=".env" location="process.cwd()"/>
+    </EnvironmentConfiguration>
+  </ConfigurationLayer>
+
+  <DataStructures>
+    <MissionData>
+      <Category name="assault" count="6" buffer_size="12" type="COMPETITIVE_PVP">
+        <Missions>
+          <Mission name="LIGHTNING STRIKE" image="Lightning_Strike.png"/>
+          <Mission name="DESTROY ALL TUNDRANS" image="Destroy_All_Tundrans.png"/>
+          <Mission name="ACES HIGH" image="Aces_High.png"/>
+          <Mission name="STORM THE PALACE" image="Storm_the_Palace.png"/>
+          <Mission name="ARMADA" image="Armada.png"/>
+          <Mission name="COLD WAR" image="Cold_War.png"/>
+        </Missions>
+      </Category>
+
+      <Category name="skirmish" count="6" buffer_size="12" type="QUICK_MATCH">
+        <Missions>
+          <Mission name="BATTLESTATIONS" image="BATTLESTATIONS.png"/>
+          <Mission name="EXCHANGE OF FIRE" image="Exchange_of_Fire.png"/>
+          <Mission name="BORDER PATROL" image="Border_Patrol.png"/>
+          <Mission name="DONATSU ISLAND" image="Donatsu_Island.png"/>
+          <Mission name="SAND CASTLES" image="Sand_Castles.png"/>
+          <Mission name="MELEE" image="Melee.png"/>
+        </Missions>
+      </Category>
+
+      <Category name="coop" count="4" buffer_size="8" type="COOPERATIVE">
+        <Missions>
+          <Mission name="STORM THE BEACHES" image="Storm_the_Beaches.png"/>
+          <Mission name="FROM TUNDRA WITH LOVE" image="From_Tundra_With_Love.png"/>
+          <Mission name="CRACK SQUAD" image="Crack_Squad.png"/>
+          <Mission name="UNDER SIEGE" image="Under_Siege.png"/>
+        </Missions>
+      </Category>
+
+      <WeightedSelectionAlgorithm>
+        <Parameters>
+          <Parameter name="min_weight" value="0.01" purpose="Prevent zero probability"/>
+          <Parameter name="inverse_pickrate" value="true" purpose="Favor less selected missions"/>
+          <Parameter name="normalization" value="true" purpose="Ensure probability sum equals 1"/>
+        </Parameters>
+        <BufferManagement>
+          <BufferType>sliding_window</BufferType>
+          <OverflowBehavior>shift_oldest</OverflowBehavior>
+          <Initialization>even_distribution</Initialization>
+        </BufferManagement>
+      </WeightedSelectionAlgorithm>
+    </MissionData>
+
+    <RuntimeState>
+      <AutoVerifySetting type="boolean" default="true" scope="global" persistence="session"/>
+      <InviteCache type="Map&lt;guildId, Map&lt;inviteCode, uses&gt;&gt;" 
+                   purpose="Track invite usage for verification"
+                   lifecycle="runtime">
+        <RefreshTriggers>
+          <Trigger>inviteCreate</Trigger>
+          <Trigger>inviteDelete</Trigger>
+          <Trigger>ready</Trigger>
+        </RefreshTriggers>
+      </InviteCache>
+      
+      <MissionBuffers>
+        <Buffer name="assault" type="Array&lt;string&gt;" max_size="12" management="sliding_window"/>
+        <Buffer name="skirmish" type="Array&lt;string&gt;" max_size="12" management="sliding_window"/>
+        <Buffer name="coop" type="Array&lt;string&gt;" max_size="8" management="sliding_window"/>
+        <Buffer name="anymission" type="Array&lt;string&gt;" max_size="18" management="sliding_window"/>
+      </MissionBuffers>
+    </RuntimeState>
+  </DataStructures>
+
+  <LogicFlowPatterns>
+    <VerificationWorkflow>
+      <Trigger event="guildMemberAdd">
+        <Step order="1" action="account_age_check" threshold="90_days"/>
+        <Step order="2" action="invite_verification" condition="if_account_too_new"/>
+        <Step order="3" action="auto_verify_check" condition="if_normal_flow"/>
+        <Step order="4" action="role_assignment" 
+              options="verified_role|unverified_role"/>
+        <Step order="5" action="language_role_conversion" condition="if_unverified"/>
+      </Trigger>
+
+      <Trigger event="dm_message_received">
+        <Step order="1" action="unverified_role_check"/>
+        <Step order="2" action="modmail_channel_creation" condition="if_unverified"/>
+        <Step order="3" action="verification_embed_creation"/>
+        <Step order="4" action="button_component_addition"/>
+        <Step order="5" action="message_relay_to_moderators"/>
+        <Step order="6" action="confirmation_to_user"/>
+      </Trigger>
+
+      <Trigger event="verify_button_clicked">
+        <Step order="1" action="member_lookup"/>
+        <Step order="2" action="role_cleanup" roles="language_v_roles,unverified_role"/>
+        <Step order="3" action="verified_role_assignment"/>
+        <Step order="4" action="log_verification_action"/>
+        <Step order="5" action="modmail_channel_deletion"/>
+      </Trigger>
+    </VerificationWorkflow>
+
+    <MissionSelectionWorkflow>
+      <Trigger event="mission_command_executed">
+        <Step order="1" action="category_identification"/>
+        <Step order="2" action="buffer_retrieval"/>
+        <Step order="3" action="occurrence_counting"/>
+        <Step order="4" action="inverse_weight_calculation"/>
+        <Step order="5" action="weight_normalization"/>
+        <Step order="6" action="weighted_random_selection"/>
+        <Step order="7" action="buffer_update"/>
+        <Step order="8" action="image_loading"/>
+        <Step order="9" action="embed_creation"/>
+        <Step order="10" action="response_transmission"/>
+      </Trigger>
+    </MissionSelectionWorkflow>
+
+    <RoleSynchronizationWorkflow>
+      <Trigger event="guildMemberUpdate">
+        <Step order="1" action="role_change_detection"/>
+        <Step order="2" action="language_role_identification"/>
+        <Step order="3" action="unverified_status_check"/>
+        <Step order="4" action="automatic_v_role_assignment" condition="if_unverified"/>
+        <Step order="5" action="v_role_removal" condition="if_language_role_removed"/>
+      </Trigger>
+    </RoleSynchronizationWorkflow>
+  </LogicFlowPatterns>
+
+  <SecurityFramework>
+    <PermissionHierarchy>
+      <Level value="5" name="Administrator">
+        <Capabilities>
+          <Capability>modify_verification_settings</Capability>
+          <Capability>force_role_changes</Capability>
+          <Capability>access_administrative_logs</Capability>
+        </Capabilities>
+        <Commands>
+          <Command>toggleverification</Command>
+          <Command>forceunverify</Command>
+        </Commands>
+      </Level>
+
+      <Level value="3" name="Moderator" role_id="207234190805041152">
+        <Capabilities>
+          <Capability>view_modmail_channels</Capability>
+          <Capability>verify_users</Capability>
+          <Capability>access_verification_buttons</Capability>
+        </Capabilities>
+      </Level>
+
+      <Level value="2" name="VerifiedUser" role_id="1254576308843970593">
+        <Capabilities>
+          <Capability>access_server_content</Capability>
+          <Capability>use_mission_commands</Capability>
+        </Capabilities>
+      </Level>
+
+      <Level value="1" name="UnverifiedUser" role_id="830119466967760957">
+        <Capabilities>
+          <Capability>send_verification_requests</Capability>
+          <Capability>limited_server_access</Capability>
+        </Capabilities>
+      </Level>
+    </PermissionHierarchy>
+
+    <ValidationChain>
+      <ValidationStep order="1" type="input_validation" handler="discord.js"/>
+      <ValidationStep order="2" type="permission_check" handler="permission_bit_field"/>
+      <ValidationStep order="3" type="role_validation" handler="guild_member_lookup"/>
+      <ValidationStep order="4" type="action_authorization" handler="feature_access_control"/>
+      <ValidationStep order="5" type="execution_logging" handler="log_channel"/>
+    </ValidationChain>
+  </SecurityFramework>
+
+  <PerformanceMetrics>
+    <AlgorithmicComplexity>
+      <Algorithm name="weighted_mission_selection" 
+                time_complexity="O(n)" 
+                space_complexity="O(n)" 
+                n_factor="number_of_missions_per_category"/>
+      <Algorithm name="invite_tracking" 
+                time_complexity="O(m)" 
+                space_complexity="O(m)" 
+                m_factor="number_of_active_invites"/>
+      <Algorithm name="role_synchronization" 
+                time_complexity="O(1)" 
+                space_complexity="O(1)"/>
+    </AlgorithmicComplexity>
+
+    <ResourceUtilization>
+      <Memory>
+        <Component name="invite_cache" usage="dynamic" scale_factor="invite_count"/>
+        <Component name="mission_buffers" usage="fixed" size="50_mission_slots_total"/>
+        <Component name="static_data" usage="fixed" size="2KB_configuration"/>
+      </Memory>
+      
+      <APICalls>
+        <CallFrequency level="high">
+          <Call>role_modifications</Call>
+          <Call>channel_operations</Call>
+        </CallFrequency>
+        <CallFrequency level="medium">
+          <Call>invite_fetching</Call>
+          <Call>member_lookups</Call>
+        </CallFrequency>
+        <CallFrequency level="low">
+          <Call>command_registrations</Call>
+          <Call>guild_caching</Call>
+        </CallFrequency>
+      </APICalls>
+    </ResourceUtilization>
+  </PerformanceMetrics>
+
+  <AssetManagement>
+    <ImageAssets>
+      <Directory path="./images" structure="categorized">
+        <Category name="assault" count="6">
+          <Asset name="Lightning_Strike.png"/>
+          <Asset name="Destroy_All_Tundrans.png"/>
+          <Asset name="Aces_High.png"/>
+          <Asset name="Storm_the_Palace.png"/>
+          <Asset name="Armada.png"/>
+          <Asset name="Cold_War.png"/>
+        </Category>
+        <Category name="skirmish" count="6">
+          <Asset name="BATTLESTATIONS.png"/>
+          <Asset name="Exchange_of_Fire.png"/>
+          <Asset name="Border_Patrol.png"/>
+          <Asset name="Donatsu_Island.png"/>
+          <Asset name="Sand_Castles.png"/>
+          <Asset name="Melee.png"/>
+        </Category>
+        <Category name="coop" count="4">
+          <Asset name="Storm_the_Beaches.png"/>
+          <Asset name="From_Tundra_With_Love.png"/>
+          <Asset name="Crack_Squad.png"/>
+          <Asset name="Under_Siege.png"/>
+        </Asset>
+        </Category>
+      </Directory>
+      
+      <LoadingStrategy>
+        <Method>on_demand_per_mission_command</Method>
+        <FallbackBehavior>text_response_if_image_missing</FallbackBehavior>
+        <PathResolution>category_subfolder_plus_filename</PathResolution>
+      </LoadingStrategy>
+    </ImageAssets>
+  </AssetManagement>
+
+  <InterconnectionMatrix>
+    <ModuleConnections>
+      <Connection source="index.js" target="ready.js" type="function_import" function="setupReady"/>
+      <Connection source="index.js" target="messageCreate.js" type="function_import" function="setupMessageCreate"/>
+      <Connection source="index.js" target="messageUpdate.js" type="function_import" function="setupMessageUpdate"/>
+      <Connection source="index.js" target="interactionCreate.js" type="function_import" function="setupInteractionCreate"/>
+      <Connection source="index.js" target="guildMemberAdd.js" type="function_import" function="setupGuildMemberAdd"/>
+      <Connection source="index.js" target="guildMemberUpdate.js" type="function_import" function="setupGuildMemberUpdate"/>
+      <Connection source="index.js" target="errorHandlers.js" type="function_import" function="setupErrorHandlers"/>
+      <Connection source="messageUpdate.js" target="messageCreate.js" type="function_import" function="handleMessage"/>
+      <Connection source="guildMemberAdd.js" target="langRoles.js" type="function_import" function="swapLangToVRoles"/>
+      <Connection source="guildMemberUpdate.js" target="langRoles.js" type="object_import" object="LANG_TO_VROLE"/>
+      <Connection source="interactionCreate.js" target="guildMemberAdd.js" type="function_import" function="setAutoVerify"/>
+      <Connection source="interactionCreate.js" target="langRoles.js" type="function_import" function="swapLangToVRoles"/>
+    </ModuleConnections>
+
+    <EventFlowConnections>
+      <EventFlow name="ready" source="discord_client" target="ready.js" result="command_registration"/>
+      <EventFlow name="messageCreate" source="discord_client" target="messageCreate.js" result="modmail_processing"/>
+      <EventFlow name="messageUpdate" source="discord_client" target="messageUpdate.js" result="proxy_to_messageCreate"/>
+      <EventFlow name="interactionCreate" source="discord_client" target="interactionCreate.js" result="command_execution"/>
+      <EventFlow name="guildMemberAdd" source="discord_client" target="guildMemberAdd.js" result="verification_logic"/>
+      <EventFlow name="guildMemberUpdate" source="discord_client" target="guildMemberUpdate.js" result="role_synchronization"/>
+    </EventFlowConnections>
+  </InterconnectionMatrix>
+
+  <ResearchConclusions>
+    <ArchitecturalInsights>
+      <Insight category="Modularity">Clear separation of concerns across 7 primary modules with 11 inter-module dependencies</Insight>
+      <Insight category="EventDriven">Reactive architecture responding to 6 Discord events managing 4 primary features</Insight>
+      <Insight category="Configuration">2-layer configuration system with static IDs and environment variables</Insight>
+      <Insight category="DataManagement">3 data categories (Missions, Roles, Channels) with structured relationships</Insight>
+      <Insight category="Security">Permission-based access control with 4-level hierarchy</Insight>
+      <Insight category="Performance">Optimized algorithms with minimal memory footprint and efficient caching</Insight>
+    </ArchitecturalInsights>
+
+    <SystemCharacteristics>
+      <Characteristic name="Scalability">Stateless design with bounded memory usage</Characteristic>
+      <Characteristic name="Reliability">Comprehensive error handling and graceful degradation</Characteristic>
+      <Characteristic name="Maintainability">Modular structure with clear interfaces</Characteristic>
+      <Characteristic name="Security">Input validation and permission enforcement</Characteristic>
+      <Characteristic name="Usability">Intuitive command structure and automated workflows</Characteristic>
+    </SystemCharacteristics>
+  </ResearchConclusions>
+</BattalionWarsDiscordBot>
