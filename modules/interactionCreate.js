@@ -323,7 +323,7 @@ function setupInteractionCreate(client) {
                 const category = interaction.options.getString('category');
                 const buffer = pickBuffers[category];
                 if (!buffer || buffer.length === 0) {
-                    return interaction.reply({ content: `Buffer for ${category} is empty.`, ephemeral: true });
+                    return interaction.reply({ content: `Buffer for ${category} is empty.`, flags: 1 << 6 });
                 }
                 let reply = `**Buffer for \`${category}\` (${buffer.length} slots):**\n`;
                 // Count how many times each mission appears in the buffer
@@ -354,27 +354,27 @@ function setupInteractionCreate(client) {
                 Object.entries(counts).forEach(([mission, count]) => {
                     reply += `- ${mission}: −${(count * 100 / buffer.length).toFixed(2)}%\n`;
                 });
-                await interaction.reply({ content: reply, ephemeral: true });
+                await interaction.reply({ content: reply, flags: 1 << 6 });
                 return;
             }
             if (commandName === 'forceunverify') {
                 // Permission check: Administrator only
                 if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                    return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+                    return interaction.reply({ content: 'You do not have permission to use this command.', flags: 1 << 6 });
                 }
 
                 // Defer the reply immediately to avoid "Unknown interaction" if operations take time
-                await interaction.deferReply({ ephemeral: true }).catch(() => { /* ignore */ });
+                await interaction.deferReply({ flags: 1 << 6 }).catch(() => { /* ignore */ });
 
                 const user = interaction.options.getUser('member');
                 const reason = interaction.options.getString('reason') || 'No reason provided';
                 if (!user) {
                     // If we deferred, use editReply; otherwise reply
-                    try { return await interaction.editReply({ content: 'No member specified.' }); } catch (e) { return interaction.reply({ content: 'No member specified.', ephemeral: true }); }
+                    try { return await interaction.editReply({ content: 'No member specified.' }); } catch (e) { return interaction.reply({ content: 'No member specified.', flags: 1 << 6 }); }
                 }
                 const member = await interaction.guild.members.fetch(user.id).catch(() => null);
                 if (!member) {
-                    try { return await interaction.editReply({ content: 'Member not found in this guild.' }); } catch (e) { return interaction.reply({ content: 'Member not found in this guild.', ephemeral: true }); }
+                    try { return await interaction.editReply({ content: 'Member not found in this guild.' }); } catch (e) { return interaction.reply({ content: 'Member not found in this guild.', flags: 1 << 6 }); }
                 }
 
                 try {
@@ -396,14 +396,14 @@ function setupInteractionCreate(client) {
                         await interaction.editReply({ content: `${member.user.tag} has been marked unverified.` });
                     } catch (err) {
                         // If interaction is unknown/expired, attempt a followUp, otherwise swallow
-                        try { await interaction.followUp({ content: `${member.user.tag} has been marked unverified.`, ephemeral: true }); } catch (e) { /* ignore */ }
+                        try { await interaction.followUp({ content: `${member.user.tag} has been marked unverified.`, flags: 1 << 6 }); } catch (e) { /* ignore */ }
                     }
                 } catch (e) {
                     console.error('Error in forceunverify:', e);
                     try {
                         await interaction.editReply({ content: 'An error occurred while trying to mark the member unverified.' });
                     } catch (err) {
-                        try { await interaction.followUp({ content: 'An error occurred while trying to mark the member unverified.', ephemeral: true }); } catch (e2) { /* ignore */ }
+                        try { await interaction.followUp({ content: 'An error occurred while trying to mark the member unverified.', flags: 1 << 6 }); } catch (e2) { /* ignore */ }
                     }
                 }
                 return;
