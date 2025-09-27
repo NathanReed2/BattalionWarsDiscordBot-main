@@ -51,32 +51,39 @@ function setupGuildMemberAdd(client) {
         }
     });
 
-    // Helper: determine if this join was via an invite (returns true/false or null on error/unknown)
-    async function joinedViaInvite(guild) {
+    // Helper: determine how this member joined (returns 'invite', 'vanity', or 'unknown')
+    async function determineJoinMethod(guild) {
         try {
             const currentInvites = await guild.invites.fetch();
             const prevMap = inviteCache.get(guild.id) || new Map();
-            // Compare uses:
+            
+            // Check if any invite usage increased
             for (const inv of currentInvites.values()) {
                 const prevUses = prevMap.get(inv.code) ?? 0;
                 const currUses = inv.uses ?? 0;
                 if (currUses > prevUses) {
-                    // found an invite whose uses increased -> joined via invite
-                    // update cache then return true
+                    // Update cache and return invite join
                     const newMap = new Map();
                     currentInvites.forEach(i => newMap.set(i.code, i.uses ?? 0));
                     inviteCache.set(guild.id, newMap);
-                    return true;
+                    return 'invite';
                 }
             }
-            // No invite shows increased uses -> likely join without invite (discovery/other)
+            
+            // No invite usage increased, update cache
             const newMap = new Map();
             currentInvites.forEach(i => newMap.set(i.code, i.uses ?? 0));
             inviteCache.set(guild.id, newMap);
-            return false;
+            
+            // Check if guild has vanity URL
+            if (guild.vanityURLCode) {
+                return 'vanity';
+            }
+            
+            return 'unknown';
         } catch (e) {
-            console.warn(`Could not determine invite used for guild ${guild.id}:`, e.message || e);
-            return null; // unknown
+            console.warn(`Could not determine join method for guild ${guild.id}:`, e.message || e);
+            return 'unknown';
         }
     }
 
@@ -89,26 +96,27 @@ function setupGuildMemberAdd(client) {
         const isTooNew = accountAgeMs < MIN_ACCOUNT_AGE_MS;
 
         try {
-            // If account is too new, check whether the join was via an invite
+            // If account is too new, check how they joined
             if (isTooNew) {
-                const viaInvite = await joinedViaInvite(member.guild);
-                // Only force unverified if we determined it's NOT via invite (false).
-                // Treat unknown (null) as "no invite" to ensure new accounts that cannot be tied to an invite get unverified.
-                if (viaInvite === false || viaInvite === null) {
+                const joinMethod = await determineJoinMethod(member.guild);
+                
+                // Force unverified for vanity URL joins, non-invite joins, or unknown joins
+                if (joinMethod === 'vanity' || joinMethod === 'unknown') {
                     // Remove roles and assign unverified
                     if (verifiedRole) await member.roles.remove(verifiedRole).catch(() => {});
                     if (unverifiedRole) {
                         await member.roles.add(unverifiedRole);
                         // swap language roles to -v versions (if any)
                         await swapLangToVRoles(member).catch(() => {});
-                        console.log(`Assigned unverified to ${member.user.tag} (account age ${(accountAgeMs / (1000*60*60*24)).toFixed(1)} days) — joined without invite or invite unknown`);
+                        
+                        const joinMethodText = joinMethod === 'vanity' ? 'vanity URL' : 'unknown method';
+                        console.log(`Assigned unverified to ${member.user.tag} (account age ${(accountAgeMs / (1000*60*60*24)).toFixed(1)} days) — joined via ${joinMethodText}`);
                     } else {
                         console.warn('Unverified role not found; cannot assign to new account:', member.user.tag);
                     }
                     return;
                 }
-                // if viaInvite === true -> allow normal behavior below
-                // if viaInvite === null -> previously conservative; now treated above as unverified
+                // if joinMethod === 'invite' -> allow normal behavior below
             }
 
             // Normal behavior based on autoVerify setting
