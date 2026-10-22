@@ -5,7 +5,8 @@
   "main": "index.js",
   "bin": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:exe": "pkg . --targets node18-win-x64 --output Builds/BattalionWarsDiscordBot.exe"
   },
   "keywords": [],
   "author": "",
